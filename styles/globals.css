@@ -1,0 +1,239 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent-bright)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+@layer base {
+  :root {
+    /* Base colors - warmer and more inviting */
+    --background: 220 20% 98%;
+    --foreground: 220 15% 15%;
+    
+    /* Card colors with subtle warmth */
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
+    
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
+    
+    /* Primary - modern blue with personality */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - soft purple accent */
+    --secondary: 250 20% 95%;
+    --secondary-foreground: 250 15% 25%;
+    
+    /* Muted colors - warmer grays */
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 55%;
+    
+    /* Accent - complementary orange */
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* New accent color for variety */
+    --accent-bright: 280 85% 65%;
+    
+    /* Success color */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning color */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    /* Destructive - softer red */
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border and input - subtle with warmth */
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 217 91% 60%;
+    
+    /* Enhanced chart colors */
+    --chart-1: 217 91% 60%;  /* Primary blue */
+    --chart-2: 142 76% 36%;  /* Success green */
+    --chart-3: 25 95% 53%;   /* Accent orange */
+    --chart-4: 280 85% 65%;  /* Purple accent */
+    --chart-5: 340 82% 52%;  /* Pink accent */
+    
+    --radius: 0.75rem;
+    
+    /* Sidebar colors - cohesive with main theme */
+    --sidebar-background: 220 20% 97%;
+    --sidebar-foreground: 220 15% 25%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 250 20% 93%;
+    --sidebar-accent-foreground: 250 15% 25%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 217 91% 60%;
+  }
+  
+  .dark {
+    /* Dark mode - sophisticated with color */
+    --background: 220 25% 6%;
+    --foreground: 220 15% 95%;
+    
+    --card: 220 20% 8%;
+    --card-foreground: 220 15% 95%;
+    
+    --popover: 220 20% 8%;
+    --popover-foreground: 220 15% 95%;
+    
+    /* Primary - brighter in dark mode */
+    --primary: 217 91% 65%;
+    --primary-foreground: 220 25% 6%;
+    
+    /* Secondary - deeper purple */
+    --secondary: 250 15% 15%;
+    --secondary-foreground: 250 10% 85%;
+    
+    --muted: 220 15% 12%;
+    --muted-foreground: 220 10% 70%;
+    
+    /* Accent - vibrant orange for dark mode */
+    --accent: 25 95% 58%;
+    --accent-foreground: 220 25% 6%;
+    
+    --accent-bright: 280 85% 70%;
+    
+    --success: 142 76% 41%;
+    --success-foreground: 220 25% 6%;
+    
+    --warning: 38 92% 55%;
+    --warning-foreground: 220 25% 6%;
+    
+    --destructive: 0 75% 65%;
+    --destructive-foreground: 220 25% 6%;
+    
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 217 91% 65%;
+    
+    /* Dark mode chart colors - more vibrant */
+    --chart-1: 217 91% 65%;
+    --chart-2: 142 76% 45%;
+    --chart-3: 25 95% 58%;
+    --chart-4: 280 85% 70%;
+    --chart-5: 340 82% 57%;
+    
+    --sidebar-background: 220 25% 5%;
+    --sidebar-foreground: 220 15% 90%;
+    --sidebar-primary: 217 91% 65%;
+    --sidebar-primary-foreground: 220 25% 6%;
+    --sidebar-accent: 220 15% 10%;
+    --sidebar-accent-foreground: 220 15% 90%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 217 91% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Enhanced button styles */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70 transition-colors duration-200;
+  }
+  
+  .btn-accent {
+    @apply bg-accent text-accent-foreground hover:bg-accent/90 active:bg-accent/80 transition-colors duration-200;
+  }
+  
+  /* Enhanced card styles */
+  .card {
+    @apply bg-card text-card-foreground border border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+  
+  /* Focus styles */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Status colors */
+  .text-success {
+    color: hsl(var(--success));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .text-destructive {
+    color: hsl(var(--destructive));
+  }
+  
+  .bg-success {
+    background-color: hsl(var(--success));
+    color: hsl(var(--success-foreground));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+    color: hsl(var(--warning-foreground));
+  }
+  
+  /* Smooth transitions for interactive elements */
+  button, a, input, textarea, select {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  /* Enhanced scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}

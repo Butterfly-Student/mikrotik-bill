@@ -1,0 +1,182 @@
+// Usage Examples
+
+import { PermissionGuard, RoleGuard, CombinedGuard, usePermissions } from "@/components/guards"
+
+// 1. Basic Permission Guard
+function BasicExample() {
+  return (
+    <PermissionGuard 
+      permission="users.read"
+      fallback={<div>Access Denied</div>}
+    >
+      <UserList />
+    </PermissionGuard>
+  )
+}
+
+// 2. Multiple Permissions - ANY mode (default)
+function MultiplePermissionsAny() {
+  return (
+    <PermissionGuard 
+      permission={["users.read", "users.admin"]}
+      mode="any"
+      fallback={<div>You need at least one of these permissions</div>}
+    >
+      <UserManagement />
+    </PermissionGuard>
+  )
+}
+
+// 3. Multiple Permissions - ALL mode
+function MultiplePermissionsAll() {
+  return (
+    <PermissionGuard 
+      permission={["users.read", "users.write", "users.delete"]}
+      mode="all"
+      fallback={<div>You need all permissions to access this</div>}
+    >
+      <AdvancedUserManagement />
+    </PermissionGuard>
+  )
+}
+
+// 4. Role Guard
+function RoleExample() {
+  return (
+    <RoleGuard 
+      roles={["admin", "moderator"]}
+      fallback={<div>Admin or Moderator access required</div>}
+    >
+      <AdminPanel />
+    </RoleGuard>
+  )
+}
+
+// 5. Combined Guard - Permission AND Role
+function CombinedAndExample() {
+  return (
+    <CombinedGuard
+      permissions="billing.manage"
+      roles="admin"
+      logic="and"
+      fallback={<div>You need billing permission AND admin role</div>}
+    >
+      <BillingManagement />
+    </CombinedGuard>
+  )
+}
+
+// 6. Combined Guard - Permission OR Role
+function CombinedOrExample() {
+  return (
+    <CombinedGuard
+      permissions={["support.access", "tickets.manage"]}
+      roles={["support", "admin"]}
+      logic="or"
+      fallback={<div>You need support permissions OR support/admin role</div>}
+    >
+      <SupportTickets />
+    </CombinedGuard>
+  )
+}
+
+// 7. Using the usePermissions hook directly
+function CustomPermissionLogic() {
+  const { hasPermission, hasRole, permissions, roles, isLoading } = usePermissions()
+  
+  if (isLoading) {
+    return <div>Loading permissions...</div>
+  }
+  
+  const canManageUsers = hasPermission("users.manage")
+  const isAdmin = hasRole("admin")
+  const canViewBilling = hasPermission("billing.read") || isAdmin
+  
+  return (
+    <div>
+      {canManageUsers && <UserManagementButton />}
+      {canViewBilling && <BillingSection />}
+      {isAdmin && <AdminTools />}
+      
+      <div className="debug-info">
+        <p>Available Permissions: {permissions.join(", ")}</p>
+        <p>User Roles: {roles.join(", ")}</p>
+      </div>
+    </div>
+  )
+}
+
+// 8. Conditional rendering in JSX
+function ConditionalExample() {
+  const { hasPermission, hasRole } = usePermissions()
+  
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      
+      {hasPermission("analytics.read") && (
+        <AnalyticsWidget />
+      )}
+      
+      {hasRole("admin") ? (
+        <AdminDashboard />
+      ) : (
+        <UserDashboard />
+      )}
+      
+      {(hasPermission("reports.generate") || hasRole("manager")) && (
+        <ReportsSection />
+      )}
+    </div>
+  )
+}
+
+// 9. Custom Loading and Fallback Components
+function CustomComponentsExample() {
+  return (
+    <PermissionGuard
+      permission="premium.features"
+      loading={
+        <div className="flex items-center gap-2 p-4">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+          <span>Checking premium access...</span>
+        </div>
+      }
+      fallback={
+        <div className="border border-orange-200 bg-orange-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-orange-800">Premium Feature</h3>
+          <p className="text-orange-700">Upgrade to premium to access this feature.</p>
+          <button className="mt-2 bg-orange-600 text-white px-4 py-2 rounded">
+            Upgrade Now
+          </button>
+        </div>
+      }
+    >
+      <PremiumFeatures />
+    </PermissionGuard>
+  )
+}
+
+// 10. Nested Guards
+function NestedGuardsExample() {
+  return (
+    <RoleGuard roles="authenticated" fallback={<LoginPrompt />}>
+      <div>
+        <h1>Welcome!</h1>
+        
+        <PermissionGuard permission="dashboard.read">
+          <DashboardSection />
+        </PermissionGuard>
+        
+        <RoleGuard roles={["admin", "moderator"]}>
+          <PermissionGuard 
+            permission={["users.manage", "content.moderate"]}
+            mode="any"
+          >
+            <ModerationTools />
+          </PermissionGuard>
+        </RoleGuard>
+      </div>
+    </RoleGuard>
+  )
+}
