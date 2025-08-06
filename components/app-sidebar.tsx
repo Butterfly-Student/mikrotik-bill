@@ -1,6 +1,6 @@
 "use client"
 import * as React from "react"
-import { BookOpen, Bot, Command, CreditCard, LifeBuoy, Send, Settings2, SquareTerminal, Users, Wifi } from "lucide-react"
+import { AudioWaveform, BookOpen, Bot, Command, CreditCard, GalleryVerticalEnd, LifeBuoy, Send, Settings2, SquareTerminal, Users, Wifi } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useMemo } from "react"
 import { NavMain } from "@/components/nav-main"
@@ -16,6 +16,25 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { navigationConfig } from "@/config/navigation"
+import { MikrotikSwitcher } from "./mikrotik/mikrotik-switcher"
+
+const mikrotik = [
+  {
+    name: "Acme Inc",
+    logo: GalleryVerticalEnd,
+    plan: "Enterprise",
+  },
+  {
+    name: "Acme Corp.",
+    logo: AudioWaveform,
+    plan: "Startup",
+  },
+  {
+    name: "Evil Corp.",
+    logo: Command,
+    plan: "Free",
+  }
+]
 
 export const AppSidebar = React.memo(function AppSidebar({
   ...props
@@ -29,27 +48,38 @@ export const AppSidebar = React.memo(function AppSidebar({
   }, [session?.user?.permissions])
 
   // Memoize nav items configuration
-  const allNavItems = useMemo(() => navigationConfig, [])
+  const allNavGroups = useMemo(() => navigationConfig, [])
 
-  // Memoize filtered nav items
-  const filteredNavItems = useMemo(() => {
-    return allNavItems
-      .filter((item) => hasPermission(item.permission))
-      .map((item) => {
-        // Filter sub-items berdasarkan permission jika ada
-        const filteredSubItems = item.items?.filter((subItem) => hasPermission(subItem.permission))
+  // Memoize filtered nav groups and items
+  const filteredNavGroups = useMemo(() => {
+    return allNavGroups
+      .map((group) => {
+        // Filter items dalam group berdasarkan permission
+        const filteredItems = group.items
+          .filter((item) => hasPermission(item.permission))
+          .map((item) => {
+            // Filter sub-items berdasarkan permission jika ada
+            const filteredSubItems = item.items?.filter((subItem) => hasPermission(subItem.permission))
+            return {
+              ...item,
+              // Jika tidak ada items asli, set undefined. Jika ada, gunakan hasil filter
+              items: item.items ? filteredSubItems : undefined,
+            }
+          })
 
-        return {
-          ...item,
-          // Jika tidak ada items asli, set undefined. Jika ada, gunakan hasil filter
-          items: item.items ? filteredSubItems : undefined,
+        // Hanya return group jika ada items yang tersisa setelah filter
+        if (filteredItems.length > 0) {
+          return {
+            ...group,
+            items: filteredItems,
+          }
         }
+        return null
       })
-    // PERBAIKAN: Tidak perlu filter lagi berdasarkan items.length
-    // Semua item yang sudah lolos permission check akan ditampilkan
-  }, [allNavItems, hasPermission])
+      .filter(Boolean) // Remove null groups
+  }, [allNavGroups, hasPermission])
 
-  console.log("Filterd nav", filteredNavItems)
+  console.log("Filtered nav groups", filteredNavGroups)
 
   // Memoize secondary nav items
   const navSecondaryItems = useMemo(() => [
@@ -85,11 +115,18 @@ export const AppSidebar = React.memo(function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={filteredNavItems} />
+        {/* Render each navigation group */}
+        {filteredNavGroups.map((group, index) => (
+          <NavMain
+            key={group?.title || `group-${index}`}
+            items={group?.items}
+            groupTitle={group?.title}
+          />
+        ))}
         <NavSecondary items={navSecondaryItems} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <MikrotikSwitcher />
       </SidebarFooter>
     </Sidebar>
   )

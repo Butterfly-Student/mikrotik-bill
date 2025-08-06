@@ -1,173 +1,74 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, desc, asc, like, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import {
+	ApiError,
+	handleApiError,
+	successResponse,
+} from "@/lib/utils/api-response";
 import { db } from "@/lib/db/index";
-import { routers } from "@/database/schema/mikrotik";
-import { z } from "zod";
-import { updateRouterSchema } from "../route";
+import { routers } from "@/database/schema/users";
+import { routerIdSchema } from "@/lib/validator/router";
 
-// GET /api/routers/[id] - Get router by ID
-export async function GET(
-	request: NextRequest,
-	{ params }: { params: { id: string } }
-) {
-	try {
-		const routerId = parseInt(params.id);
-
-		if (isNaN(routerId)) {
-			return NextResponse.json(
-				{ success: false, error: "Invalid router ID" },
-				{ status: 400 }
-			);
-		}
-
-		const [router] = await db
-			.select()
-			.from(routers)
-			.where(eq(routers.id, routerId));
-
-		if (!router) {
-			return NextResponse.json(
-				{ success: false, error: "Router not found" },
-				{ status: 404 }
-			);
-		}
-
-		return NextResponse.json({
-			success: true,
-			data: router,
-		});
-	} catch (error) {
-		console.error("Error getting router:", error);
-		return NextResponse.json(
-			{ success: false, error: "Failed to get router" },
-			{ status: 500 }
-		);
-	}
-}
-
-// PUT /api/routers/[id] - Update router
-export async function UPDATE(
-	request: NextRequest,
-	{ params }: { params: { id: string } }
-) {
-	try {
-		const routerId = parseInt(params.id);
-
-		if (isNaN(routerId)) {
-			return NextResponse.json(
-				{ success: false, error: "Invalid router ID" },
-				{ status: 400 }
-			);
-		}
-
-		const body = await request.json();
-		const validatedData = updateRouterSchema.parse(body);
-
-		// Check if router exists
-		const [existingRouter] = await db
-			.select()
-			.from(routers)
-			.where(eq(routers.id, routerId));
-
-		if (!existingRouter) {
-			return NextResponse.json(
-				{ success: false, error: "Router not found" },
-				{ status: 404 }
-			);
-		}
-
-		// Check if IP address already exists (if being updated)
-		if (
-			validatedData.ip_address &&
-			validatedData.ip_address !== existingRouter.ip_address
-		) {
-			const [duplicateRouter] = await db
-				.select()
-				.from(routers)
-				.where(eq(routers.ip_address, validatedData.ip_address));
-
-			if (duplicateRouter) {
-				return NextResponse.json(
-					{
-						success: false,
-						error: "Router with this IP address already exists",
-					},
-					{ status: 400 }
-				);
-			}
-		}
-
-		// Update router
-		const [updatedRouter] = await db
-			.update(routers)
-			.set({
-				...validatedData,
-				updated_at: new Date(),
-			})
-			.where(eq(routers.id, routerId))
-			.returning();
-
-		return NextResponse.json({
-			success: true,
-			data: updatedRouter,
-		});
-	} catch (error) {
-		console.error("Error updating router:", error);
-
-		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{ success: false, error: "Invalid data", details: error.errors },
-				{ status: 400 }
-			);
-		}
-
-		return NextResponse.json(
-			{ success: false, error: "Failed to update router" },
-			{ status: 500 }
-		);
-	}
-}
-
-// DELETE /api/routers/[id] - Delete router
+// DELETE /api/routers/[id]
 export async function DELETE(
 	request: NextRequest,
 	{ params }: { params: { id: string } }
 ) {
 	try {
-		const routerId = parseInt(params.id);
-
-		if (isNaN(routerId)) {
-			return NextResponse.json(
-				{ success: false, error: "Invalid router ID" },
-				{ status: 400 }
-			);
-		}
+		// Validate router ID
+		const { id } = routerIdSchema.parse(params);
 
 		// Check if router exists
-		const [existingRouter] = await db
-			.select()
+		const existingRouter = await db
+			.select({ id: routers.id })
 			.from(routers)
-			.where(eq(routers.id, routerId));
+			.where(eq(routers.id, id))
+			.limit(1);
 
-		if (!existingRouter) {
-			return NextResponse.json(
-				{ success: false, error: "Router not found" },
-				{ status: 404 }
-			);
+		if (existingRouter.length === 0) {
+			throw new ApiError("Router not found", 404, "ROUTER_NOT_FOUND");
 		}
 
-		// Delete router
-		await db.delete(routers).where(eq(routers.id, routerId));
+		// Soft delete by setting is_active to false
+		const deletedRouter = await db
+			.update(routers)
+			.set({
+				is_active: false,
+				updated_at: new Date(),
+			})
+			.where(eq(routers.id, id))
+			.returning({ id: routers.id });
 
-		return NextResponse.json({
-			success: true,
-			message: "Router deleted successfully",
-		});
+		if (!deletedRouter[0]) {
+			throw new ApiError("Failed to delete router", 500, "DELETION_FAILED");
+		}
+
+		return successResponse({ id: deletedRouter[0].id });
 	} catch (error) {
-		console.error("Error deleting router:", error);
-		return NextResponse.json(
-			{ success: false, error: "Failed to delete router" },
-			{ status: 500 }
-		);
+		return handleApiError(error);
+	}
+}
+
+// GET /api/routers/[id]
+export async function GET(
+	request: NextRequest,
+	{ params }: { params: { id: string } }
+) {
+	try {
+		const { id } = routerIdSchema.parse(params);
+
+		const router = await db
+			.select()
+			.from(routers)
+			.where(eq(routers.id, id))
+			.limit(1);
+
+		if (router.length === 0) {
+			throw new ApiError("Router not found", 404, "ROUTER_NOT_FOUND");
+		}
+
+		return successResponse(router[0]);
+	} catch (error) {
+		return handleApiError(error);
 	}
 }

@@ -21,6 +21,8 @@ export interface ReusableInputProps {
   disabled?: boolean
   className?: string
   description?: string
+  defaultValue?: string | number
+  [key: string]: any // Allow additional props for flexibility
 }
 
 export const ReusableInput = forwardRef<HTMLInputElement, ReusableInputProps>(
@@ -37,6 +39,7 @@ export const ReusableInput = forwardRef<HTMLInputElement, ReusableInputProps>(
       disabled,
       className,
       description,
+      defaultValue,
       ...props
     },
     ref,
@@ -51,6 +54,7 @@ export const ReusableInput = forwardRef<HTMLInputElement, ReusableInputProps>(
               onChange={(e) => onChange?.(e.target.value)}
               disabled={disabled}
               className={cn(error && "border-red-500", className)}
+              defaultValue={defaultValue as string}
               {...props}
             />
           )
@@ -110,6 +114,7 @@ export const ReusableInput = forwardRef<HTMLInputElement, ReusableInputProps>(
               onChange={(e) => onChange?.(e.target.value)}
               disabled={disabled}
               className={cn(error && "border-red-500", className)}
+              defaultValue={defaultValue as string}
               {...props}
             />
           )

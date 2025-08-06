@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Wifi, WifiOff, RefreshCw, Users, Upload, Download, Clock, Settings, Play, Pause } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { ReusableDialog } from "@/components/reausable/dialog"
-import { StatsCard } from "@/components/reausable/stats-card"
-import { FilterableTable, type TableColumn } from "@/components/reausable/table"
+import { ReusableDialog } from "@/components/mikrotik/reausable/dialog"
+import { StatsCard } from "@/components/mikrotik/reausable/stats-card"
+import { FilterableTable, type TableColumn } from "@/components/mikrotik/reausable/table"
 import { Label } from "@/components/ui/label"
-import { TableControlsConfig } from "@/components/reausable/table-control"
+import { TableControlsConfig } from "@/components/mikrotik/reausable/table-control"
 
 interface ActiveSession {
   id: string

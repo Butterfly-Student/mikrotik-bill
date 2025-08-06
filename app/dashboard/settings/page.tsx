@@ -54,43 +54,7 @@ export default function SettingsPage() {
 
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchConfig()
-  }, [])
 
-  const fetchConfig = async () => {
-    try {
-      const res = await fetch("/api/system/config")
-      if (res.ok) {
-        const data = await res.json()
-        setConfig((prev) => ({ ...prev, ...data.data }))
-      }
-    } catch (error) {
-      console.error("Failed to fetch config:", error)
-    }
-  }
-
-  const handleSave = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/system/config", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      })
-
-      if (res.ok) {
-        toast({ title: "Success", description: "Settings saved successfully" })
-      } else {
-        const error = await res.json()
-        toast({ title: "Error", description: error.message, variant: "destructive" })
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to save settings", variant: "destructive" })
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const testMikrotikConnection = async () => {
     setTesting((prev) => ({ ...prev, mikrotik: true }))
@@ -168,10 +132,6 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">Configure system settings and preferences</p>
         </div>
-        <Button onClick={handleSave} disabled={loading}>
-          <Save className="h-4 w-4 mr-2" />
-          {loading ? "Saving..." : "Save Settings"}
-        </Button>
       </div>
 
       <Tabs defaultValue="mikrotik" className="space-y-6">

@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PermissionGuard } from "@/components/rbca-guard"
-import { ReusableDialog } from "@/components/reausable/dialog"
-import { ReusableForm, type FormField } from "@/components/reausable/form"
+import { ReusableDialog } from "@/components/mikrotik/reausable/dialog"
+import { ReusableForm, type FormField } from "@/components/mikrotik/reausable/form"
 
 interface Permission {
   id: number

@@ -87,9 +87,35 @@ export class MikrotikClient {
 		return this.connectedApi!.menu("/system/identity").getOnly();
 	}
 
+	async getResources(): Promise<any> {
+		await this.connect();
+		return this.connectedApi!.menu("/system/resource").getOnly();
+	}
+
 	async getInterfaces(): Promise<any[]> {
 		await this.connect();
 		return this.connectedApi!.menu("/interface").get();
+	}
+
+	async getPPPoEProfiles(): Promise<any[]> {
+		await this.connect();
+		return this.connectedApi!.menu("/ppp/profile").get();
+	}
+
+	/**
+	 * Get PPPoE secrets from MikroTik
+	 */
+	async getPPPoESecrets(): Promise<any[]> {
+		await this.connect();
+		return this.connectedApi!.menu("/ppp/secret").get();
+	}
+
+	/**
+	 * Get Hotspot profiles from MikroTik
+	 */
+	async getHotspotProfiles(): Promise<any[]> {
+		await this.connect();
+		return this.connectedApi!.menu("/ip/hotspot/user/profile").get();
 	}
 
 	// Method untuk menggunakan RouterOSAPI untuk tugas-tugas tertentu
@@ -225,52 +251,6 @@ export class MikrotikClient {
 			throw error;
 		}
 	}
-
-	// Stream interface monitor-traffic
-	// async startInterfaceTrafficStream(
-	// 	interfaceName: string,
-	// 	callback: (data: StreamData) => void,
-	// 	errorCallback?: (error: any) => void
-	// ): Promise<string> {
-	// 	await this.connect();
-
-	// 	const streamId = `interface-traffic-${interfaceName}-${Date.now()}`;
-
-	// 	try {
-	// 		const stream = this.connectedApi!.menu("/interface monitor-traffic")
-	// 			.where({ interface: interfaceName })
-	// 			.stream("listen", (err, data) => {
-	// 				if (err) {
-	// 					console.error(
-	// 						`Interface traffic stream error for ${interfaceName}:`,
-	// 						err
-	// 					);
-	// 					errorCallback?.(err);
-	// 					return;
-	// 				}
-
-	// 				const streamData: StreamData = {
-	// 					type: "interface-traffic",
-	// 					interfaceName: interfaceName,
-	// 					data: data,
-	// 					timestamp: new Date(),
-	// 				};
-
-	// 				callback(streamData);
-	// 			});
-
-	// 		this.activeStreams.set(streamId, stream);
-	// 		return streamId;
-	// 	} catch (error) {
-	// 		console.error(
-	// 			`Failed to start interface traffic stream for ${interfaceName}:`,
-	// 			error
-	// 		);
-	// 		errorCallback?.(error);
-	// 		throw error;
-	// 	}
-	// }
-
 	// Stream DHCP Leases changes
 	async startDhcpLeasesStream(
 		callback: (data: StreamData) => void,
@@ -391,5 +371,10 @@ export class MikrotikClient {
 	// Get connection status
 	getConnectionStatus(): boolean {
 		return this.isConnected;
+	}
+	async syncRouterData(): Promise<void> {
+		// Implement your sync logic here
+		// This is a placeholder function
+		return Promise.resolve();
 	}
 }

@@ -7,6 +7,7 @@ import {
   integer,
   index,
   boolean,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -33,6 +34,36 @@ export const users = pgTable(
   (table) => [
     index("users_email_idx").on(table.email),
     index("users_username_idx").on(table.username),
+  ]
+);
+
+export const routers = pgTable(
+  "routers",
+  {
+    id: serial("id").primaryKey(),
+    uuid: uuid("uuid").defaultRandom().notNull().unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    ip_address: varchar("ip_address", { length: 45 }).notNull(),
+    username: varchar("username", { length: 50 }).notNull(),
+    password: varchar("password", { length: 255 }).notNull(),
+    keepalive: boolean("keepalive").default(true),
+    timeout: integer("timeout").default(300000),
+    port: integer("port").default(8728),
+    api_port: integer("api_port").default(8729),
+    location: varchar("location", { length: 100 }),
+    description: text("description"),
+    is_active: boolean("is_active").default(true),
+    last_seen: timestamp("last_seen"),
+    status: varchar("status", { length: 20 }).default("offline"), // online, offline, error
+    version: varchar("version", { length: 50 }),
+    uptime: varchar("uptime", { length: 50 }),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("routers_ip_idx").on(table.ip_address),
+    index("routers_status_idx").on(table.status),
+    index("routers_active_idx").on(table.is_active),
   ]
 );
 

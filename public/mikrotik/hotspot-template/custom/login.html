@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#06f" />
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Hotspot | Login</title>
+  </head>
+  <body>
+    <!-- prettier-ignore -->
+    <div class="container">
+      <div class="wrapper">
+        <div class="title-wrapper">
+          <h1>Hello!</h1>
+          <p>Login untuk menggunakan hotspot.</p>
+        </div>
+        <div class="login-method">
+          <ul>
+            <li id="member" class="login-method-menu">Member</li>
+            <li id='voucher' class="login-method-menu">Voucher</li>
+            <li id='qrCode' class="login-method-menu">QR Code</li>
+          </ul>
+        </div>
+        <form
+          id="loginForm"
+          autocomplete="off"
+          method="POST"
+          name="login"
+          >
+          <div id="input-group-username" class="input-group">
+            <div class="input-icon">
+              <input id="username" class="input" type="text" placeholder="Username" name="username" required/>
+              <i class="icon">😀</i>
+            </div>
+          </div>
+          <div id="input-group-password" class="input-group">
+            <div class="input-icon">
+              <input id="password" class="input" type="password" placeholder="Password" name="password" />
+              <i class="icon">🔑</i>
+            </div>
+            <a id="showPassword" class="btn btn-show-hide" tabindex="-1">
+              <span id="showPasswordText" >Show</span>
+            </a>
+          </div>
+          <p id="qrCodeInfo" style="text-align: center; display: none;">Untuk masuk melalui QR Code, <a id="qrCodeScannerURL" href="">klik disini</a></p>
+          <div id="error-message" class="error" style="display: none;"></div>
+          <div id="loading-message" style="display: none; text-align: center; color: #06f;">Memproses login...</div>
+          <button class="btn btn-primary" type="submit" id="loginBtn">Login</button>
+        </form>
+        <div class="form-footer">
+          <p class="copy-right">Powered By <a target="_blank" href="intent:https://mikmoni.com#Intent;end">Mikmoni.com</a></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Debug flag untuk mengaktifkan/menonaktifkan logging
+      const DEBUG = true;
+
+      // Helper function untuk debug logging
+      function debugLog(label, data) {
+        if (DEBUG) {
+          console.log(`[DEBUG] ${label}:`, data);
+        }
+      }
+
+      // Debug info awal
+      debugLog('Page loaded', {
+        url: window.location.href,
+        search: window.location.search,
+        pathname: window.location.pathname
+      });
+
+      // Get URL parameters untuk mendapatkan informasi Mikrotik
+      function getUrlParameter(name) {
+        debugLog('Getting URL parameter', name);
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(location.search);
+        const value = results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        debugLog(`URL parameter ${name}`, value);
+        return value;
+      }
+
+      // Ambil parameter dari URL Mikrotik
+      const linkLoginOnly = getUrlParameter('link-login-only') || window.location.href.split('?')[0];
+      const linkOrig = getUrlParameter('dst') || getUrlParameter('link-orig') || 'http://google.com';
+      const chapId = getUrlParameter('chap-id') || '';
+      const chapChallenge = getUrlParameter('chap-challenge') || '';
+      const mac = getUrlParameter('mac') || '';
+
+      debugLog('Mikrotik parameters extracted', {
+        linkLoginOnly,
+        linkOrig,
+        chapId,
+        chapChallenge,
+        mac
+      });
+
+      // Handle form submission
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        debugLog('Form submission started', e);
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const errorDiv = document.getElementById('error-message');
+        const loadingDiv = document.getElementById('loading-message');
+
+        debugLog('Form data collected', {
+          username,
+          password: password ? '[HIDDEN]' : '[EMPTY]',
+          hasUsername: !!username,
+          hasPassword: !!password
+        });
+
+        // Validasi input
+        if (!username) {
+          debugLog('Validation failed', 'Username is empty');
+          showError('Username/Voucher harus diisi');
+          return;
+        }
+
+        debugLog('Validation passed', 'Starting login process');
+
+        // Show loading
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Memproses...';
+        loadingDiv.style.display = 'block';
+        errorDiv.style.display = 'none';
+
+        debugLog('UI updated', 'Loading state activated');
+
+        try {
+          const requestBody = {
+            username: username,
+            password: password || username,
+            'link-login-only': linkLoginOnly,
+            'chap-id': chapId,
+            'chap-challenge': chapChallenge
+          };
+
+          debugLog('Request body prepared', {
+            ...requestBody,
+            password: '[HIDDEN]'
+          });
+
+          // Method 1: Try fetch API first
+          debugLog('Method 1: Starting fetch API request');
+          
+          const response = await fetch('http://mikrotik-bill.test/api/mikrotik/hotspot/vouchers/login', {
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          debugLog('Fetch response received', {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+
+          const result = await response.json();
+          debugLog('Response JSON parsed', result);
+
+          if (response.ok && result.success) {
+            debugLog('Login successful, redirecting', result.redirect);
+            // Redirect ke Mikrotik untuk login
+            window.location.href = result.redirect;
+          } else {
+            debugLog('Login failed', {
+              responseOk: response.ok,
+              resultSuccess: result.success,
+              message: result.message
+            });
+            showError(result.message || `Login gagal (${response.status})`);
+          }
+        } catch (error) {
+          debugLog('Fetch method failed', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+          console.error('Fetch failed, trying form submit method:', error);
+          
+          // Method 2: Fallback to form submit
+          try {
+            debugLog('Method 2: Starting FormData fallback');
+            
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password || username);
+            formData.append('link-login-only', linkLoginOnly);
+            formData.append('chap-id', chapId);
+            formData.append('chap-challenge', chapChallenge);
+
+            debugLog('FormData prepared', {
+              keys: Array.from(formData.keys())
+            });
+
+            const response = await fetch('http://mikrotik-bill.test/api/mikrotik/hotspot/vouchers/login', {
+              method: 'POST',
+              body: formData
+            });
+
+            debugLog('FormData response received', {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok
+            });
+
+            const result = await response.json();
+            debugLog('FormData response JSON parsed', result);
+
+            if (response.ok && result.success) {
+              debugLog('FormData login successful, redirecting', result.redirect);
+              window.location.href = result.redirect;
+            } else {
+              debugLog('FormData login failed', result);
+              showError(result.message || 'Login gagal');
+            }
+          } catch (formError) {
+            debugLog('FormData method also failed', {
+              error: formError.message,
+              stack: formError.stack,
+              name: formError.name
+            });
+            console.error('Form submit also failed:', formError);
+            showError('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+          }
+        } finally {
+          debugLog('Login process finished, resetting UI');
+          // Reset button
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Login';
+          loadingDiv.style.display = 'none';
+        }
+      });
+
+      // Show error message
+      function showError(message) {
+        debugLog('Showing error message', message);
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+          debugLog('Hiding error message after timeout');
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+
+      // Fallback method using hidden iframe
+      async function submitViaForm(username, password, linkLoginOnly, chapId, chapChallenge) {
+        debugLog('Starting iframe fallback method', {
+          username,
+          password: '[HIDDEN]',
+          linkLoginOnly,
+          chapId,
+          chapChallenge
+        });
+
+        return new Promise((resolve, reject) => {
+          // Create hidden iframe
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.name = 'hiddenFrame';
+          document.body.appendChild(iframe);
+          
+          debugLog('Hidden iframe created', iframe);
+
+          // Create form
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = 'http://mikrotik-bill.test/api/mikrotik/hotspot/vouchers/login';
+          form.target = 'hiddenFrame';
+
+          debugLog('Form created', {
+            method: form.method,
+            action: form.action,
+            target: form.target
+          });
+
+          // Add form fields
+          const fields = {
+            username: username,
+            password: password,
+            'link-login-only': linkLoginOnly,
+            'chap-id': chapId,
+            'chap-challenge': chapChallenge
+          };
+
+          debugLog('Adding form fields', Object.keys(fields));
+
+          for (const [key, value] of Object.entries(fields)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+            debugLog(`Added field: ${key}`, value === password ? '[HIDDEN]' : value);
+          }
+
+          // Handle iframe load
+          iframe.onload = function() {
+            debugLog('Iframe loaded, attempting to read response');
+            try {
+              // Try to read response (might not work due to CORS)
+              const response = iframe.contentDocument || iframe.contentWindow.document;
+              const responseText = response.body.textContent;
+              debugLog('Iframe response text', responseText);
+              
+              const result = JSON.parse(responseText);
+              debugLog('Iframe response parsed', result);
+              
+              if (result.success) {
+                debugLog('Iframe method successful, redirecting', result.redirect);
+                window.location.href = result.redirect;
+                resolve(result);
+              } else {
+                debugLog('Iframe method failed', result);
+                reject(new Error(result.message || 'Login gagal'));
+              }
+            } catch (e) {
+              debugLog('Cannot read iframe response (likely CORS)', e.message);
+              // If we can't read the response due to CORS, assume it worked
+              // and try to redirect after a delay
+              setTimeout(() => {
+                debugLog('Assuming iframe method worked, showing wait message');
+                showError('Login sedang diproses, silakan tunggu...');
+                resolve();
+              }, 2000);
+            } finally {
+              debugLog('Cleaning up iframe and form');
+              // Clean up
+              document.body.removeChild(iframe);
+              document.body.removeChild(form);
+            }
+          };
+
+          iframe.onerror = function(error) {
+            debugLog('Iframe error occurred', error);
+            reject(new Error('Form submission failed'));
+            document.body.removeChild(iframe);
+            document.body.removeChild(form);
+          };
+
+          debugLog('Submitting form via iframe');
+          document.body.appendChild(form);
+          form.submit();
+        });
+      }
+
+      // Debug info untuk network
+      window.addEventListener('online', () => {
+        debugLog('Network status', 'Online');
+      });
+
+      window.addEventListener('offline', () => {
+        debugLog('Network status', 'Offline');
+      });
+
+      // Debug info untuk errors
+      window.addEventListener('error', (event) => {
+        debugLog('JavaScript Error', {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error
+        });
+      });
+
+      // Debug info saat page unload
+      window.addEventListener('beforeunload', () => {
+        debugLog('Page unloading');
+      });
+
+      debugLog('Script initialization complete');
+    </script>
+    <script type="module" src="./loginScript.js"></script>
+  </body>
+</html>

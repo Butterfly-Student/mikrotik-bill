@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { FilterableTable, type TableColumn } from "@/components/reausable/table"
-import { ReusableDialog } from "@/components/reausable/dialog"
-import { ReusableForm, type FormField } from "@/components/reausable/form"
-import { StatsCard } from "@/components/reausable/stats-card"
+import { FilterableTable, type TableColumn } from "@/components/mikrotik/reausable/table"
+import { ReusableDialog } from "@/components/mikrotik/reausable/dialog"
+import { ReusableForm, type FormField } from "@/components/mikrotik/reausable/form"
+import { StatsCard } from "@/components/mikrotik/reausable/stats-card"
 import { Wifi, DollarSign, Clock, Users } from "lucide-react"
 import { toast } from "sonner"
 
@@ -358,9 +358,9 @@ export default function HotspotProfilesPage() {
         entityName="profil"
         enableBulkSelect={true}
         permissions={{
-          view: "hotspot.profiles.view",
-          write: "hotspot.profiles.view",
-          delete: "hotspot.profiles.view",
+          view: "hotspot.read",
+          write: "hotspot.read",
+          delete: "hotspot.read",
         }}
         actions={{
           onAdd: handleAdd,

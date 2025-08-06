@@ -1,0 +1,30 @@
+services:
+  nextjs:
+    build: .
+    container_name: nextjs-hotspot
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    networks:
+      - hotspot-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - nextjs
+    networks:
+      - hotspot-network
+
+networks:
+  hotspot-network:
+    driver: bridge

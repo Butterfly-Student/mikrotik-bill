@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { FilterableTable } from "@/components/reausable/table"
-import { ReusableDialog } from "@/components/reausable/dialog"
-import { ReusableForm } from "@/components/reausable/form"
+import { FilterableTable } from "@/components/mikrotik/reausable/table"
+import { ReusableDialog } from "@/components/mikrotik/reausable/dialog"
+import { ReusableForm } from "@/components/mikrotik/reausable/form"
 import { Button } from "@/components/ui/button"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"

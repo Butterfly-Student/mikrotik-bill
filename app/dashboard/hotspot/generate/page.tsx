@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ActionItem, FilterableTable, type TableColumn } from "@/components/reausable/table"
-import { ReusableDialog } from "@/components/reausable/dialog"
-import { ReusableForm, type FormField } from "@/components/reausable/form"
-import { StatsCard } from "@/components/reausable/stats-card"
+import { ActionItem, FilterableTable, type TableColumn } from "@/components/mikrotik/reausable/table"
+import { ReusableDialog } from "@/components/mikrotik/reausable/dialog"
+import { ReusableForm, type FormField } from "@/components/mikrotik/reausable/form"
+import { StatsCard } from "@/components/mikrotik/reausable/stats-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Plus, Download, FileText, Printer, Zap, Eye, Users, Clock, List, Package, Edit, Trash2, PrinterIcon } from "lucide-react"
 import { toast } from "sonner"
+import { useMikrotikSwitcher } from "@/hooks/use-mikrotik-switcher"
 
 interface Profile {
   id: number
@@ -18,32 +19,37 @@ interface Profile {
   validity_days: number
   price: number
   sell_price: number
+  type: string
+  is_active: boolean
 }
 
-interface HotspotGroup {
+interface Router {
   id: number
   name: string
+  ip_address: string
+  is_active: boolean
 }
 
-interface HotspotBatch {
+interface VoucherBatch {
   id: number
-  batch_name: string
+  router_id: number
   profile_id: number | null
-  group_id: number | null
+  batch_name: string
+  generation_config: any
   total_generated: number
-  length: number
-  prefix: string | null
-  characters: string
-  password_mode: string
   comment: string | null
-  shared_users: number
-  disable: boolean
-  created_by: string | null
+  status: string
+  is_active: boolean
   created_at: string
+  created_by: number | null
+  // Generation config properties
+  length?: number
+  prefix?: string | null
+  characters?: string
+  password_mode?: string
   // Relations
   profile?: Profile
-  group?: HotspotGroup
-  vouchers?: Voucher[]
+  profile_name?: string
 }
 
 interface Voucher {
@@ -53,30 +59,33 @@ interface Voucher {
   profile: string
   validity: string
   used: boolean
+  status: string
+  created_at: string
 }
 
 export default function GenerateVoucherPage() {
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [groups, setGroups] = useState<HotspotGroup[]>([])
-  const [batches, setBatches] = useState<HotspotBatch[]>([])
+  const [batches, setBatches] = useState<VoucherBatch[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingBatch, setEditingBatch] = useState<HotspotBatch | null>(null)
+  const [editingBatch, setEditingBatch] = useState<VoucherBatch | null>(null)
   const [showTemplate, setShowTemplate] = useState(false)
   const [templateVouchers, setTemplateVouchers] = useState<Voucher[]>([])
+  const { routers } = useMikrotikSwitcher()
 
   // Fetch data
   useEffect(() => {
     fetchProfiles()
-    fetchGroups()
     fetchBatches()
   }, [])
 
+  console.log("GenerateVoucherPage rendered", batches)
+
   const fetchProfiles = async () => {
     try {
-      const response = await fetch("/api/mikrotik/radius/hotspot/profiles")
+      const response = await fetch("/api/mikrotik/hotspot/profiles")
       if (response.ok) {
         const data = await response.json()
         setProfiles(data.data)
@@ -87,25 +96,15 @@ export default function GenerateVoucherPage() {
     }
   }
 
-  const fetchGroups = async () => {
-    try {
-      const response = await fetch("/api/mikrotik/radius/hotspot/groups")
-      if (response.ok) {
-        const data = await response.json()
-        setGroups(data.data)
-      }
-    } catch (error) {
-      console.error("Error fetching groups:", error)
-      toast.error("Gagal memuat data group")
-    }
-  }
 
   const fetchBatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/mikrotik/radius/hotspot/batches")
+      const response = await fetch("/api/mikrotik/hotspot/batches")
       if (response.ok) {
         const data = await response.json()
+        console.log("Fetching batches from API", data)
+
         setBatches(data.data)
       }
     } catch (error) {
@@ -259,8 +258,10 @@ export default function GenerateVoucherPage() {
       <div class="voucher-card">
         <div class="voucher-title">HOTSPOT VOUCHER</div>
         <div class="voucher-index">[${index + 1}]</div>
-        <div class="voucher-label">Kode Voucher</div>
+        <div class="voucher-label">Username</div>
         <div class="voucher-code">${voucher.username}</div>
+        <div class="voucher-label">Password</div>
+        <div class="voucher-code">${voucher.password}</div>
         <div class="voucher-details">
           ${voucher.validity} - ${voucher.profile}
         </div>
@@ -293,9 +294,7 @@ export default function GenerateVoucherPage() {
           </div>
           
           <script>
-            // Auto print when page loads
             window.onload = function() {
-              // Small delay to ensure content is fully loaded
               setTimeout(function() {
                 window.print();
               }, 500);
@@ -307,27 +306,22 @@ export default function GenerateVoucherPage() {
   }
 
   // Handle print function
-  const handlePrint = async (batch: HotspotBatch) => {
+  const handlePrint = async (batch: VoucherBatch) => {
     try {
       toast.info("Memuat voucher untuk print...")
 
-      const response = await fetch(`/api/mikrotik/radius/hotspot/batches/${batch.id}/vouchers`)
+      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}/vouchers`)
       if (response.ok) {
         const vouchersData = await response.json()
         const vouchers = vouchersData.data
 
-        // Generate HTML content for printing
         const printHTML = generatePrintHTML(vouchers, batch.batch_name)
-
-        // Open new tab with print content
         const printWindow = window.open('', '_blank')
+
         if (printWindow) {
           printWindow.document.write(printHTML)
           printWindow.document.close()
-
-          // Focus on the new window
           printWindow.focus()
-
           toast.success("Halaman print telah dibuka di tab baru")
         } else {
           toast.error("Gagal membuka tab baru. Pastikan popup blocker tidak aktif.")
@@ -337,12 +331,12 @@ export default function GenerateVoucherPage() {
       }
     } catch (error) {
       console.error('Error preparing print:', error)
-      toast.error("Gagal mempersiapkan print: " + error.message)
+      toast.error("Gagal mempersiapkan print: " + (error as Error).message)
     }
   }
 
   // Table columns
-  const columns: TableColumn<HotspotBatch>[] = [
+  const columns: TableColumn<VoucherBatch>[] = [
     {
       key: "id",
       label: "ID",
@@ -356,9 +350,9 @@ export default function GenerateVoucherPage() {
       hideable: false,
     },
     {
-      key: "profile_id",
+      key: "profile_name",
       label: "Profil",
-      render: (_, batch) => batch.profile?.profile_name || "-",
+      render: (_, batch) => batch.profile_name || "-",
     },
     {
       key: "total_generated",
@@ -371,33 +365,28 @@ export default function GenerateVoucherPage() {
     {
       key: "length",
       label: "Panjang",
-      render: (value) => `${value} karakter`,
+      render: (_, batch) => `${batch.generation_config.length || 6} karakter`,
     },
     {
       key: "prefix",
       label: "Prefix",
-      render: (value) => value || "-",
+      render: (_, batch) => batch.generation_config.prefix || "-",
     },
     {
       key: "password_mode",
       label: "Mode Password",
-      render: (value) => (
-        <Badge variant={value === "same_as_username" ? "default" : "secondary"}>
-          {value === "same_as_username" ? "Same as Username" : "Random"}
+      render: (_, batch) => (
+        <Badge variant={batch.generation_config.password_mode === "same_as_username" ? "default" : "secondary"}>
+          {batch.generation_config.password_mode === "same_as_username" ? "Same as Username" : "Random"}
         </Badge>
       ),
     },
     {
-      key: "shared_users",
-      label: "Shared Users",
-      render: (value) => `${value} user`,
-    },
-    {
-      key: "disable",
+      key: "is_active",
       label: "Status",
       render: (value) => (
-        <Badge variant={value ? "destructive" : "default"}>
-          {value ? "Disabled" : "Active"}
+        <Badge variant={value ? "default" : "destructive"}>
+          {value ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -412,6 +401,13 @@ export default function GenerateVoucherPage() {
   // Form fields
   const formFields: FormField[] = [
     {
+      name: "router_id",
+      label: "Router",
+      type: "select",
+      required: true,
+      options: routers.map(r => ({ value: r.id.toString(), label: `${r.name} (${r.ip_address})` })),
+    },
+    {
       name: "batch_name",
       label: "Nama Batch",
       type: "text",
@@ -420,16 +416,9 @@ export default function GenerateVoucherPage() {
     },
     {
       name: "profile_id",
-      label: "Profil",
+      label: "Profil (Opsional)",
       type: "select",
-      required: true,
       options: profiles.map(p => ({ value: p.id.toString(), label: p.profile_name })),
-    },
-    {
-      name: "group_id",
-      label: "Group",
-      type: "select",
-      options: groups.map(g => ({ value: g.id.toString(), label: g.name })),
     },
     {
       name: "total_generated",
@@ -437,6 +426,8 @@ export default function GenerateVoucherPage() {
       type: "number",
       required: true,
       placeholder: "10",
+      min: 1,
+      max: 10000,
     },
     {
       name: "length",
@@ -448,6 +439,7 @@ export default function GenerateVoucherPage() {
         { value: "6", label: "6 karakter" },
         { value: "8", label: "8 karakter" },
         { value: "10", label: "10 karakter" },
+        { value: "12", label: "12 karakter" },
       ],
     },
     {
@@ -461,6 +453,7 @@ export default function GenerateVoucherPage() {
       label: "Karakter yang Digunakan",
       type: "text",
       placeholder: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      defaultValue: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
     },
     {
       name: "password_mode",
@@ -471,13 +464,7 @@ export default function GenerateVoucherPage() {
         { value: "same_as_username", label: "Same as Username" },
         { value: "random", label: "Random" },
       ],
-    },
-    {
-      name: "shared_users",
-      label: "Shared Users",
-      type: "number",
-      required: true,
-      placeholder: "1",
+      defaultValue: "same_as_username",
     },
     {
       name: "comment",
@@ -485,14 +472,9 @@ export default function GenerateVoucherPage() {
       type: "textarea",
       placeholder: "Masukkan komentar (opsional)",
     },
-    {
-      name: "disable",
-      label: "Nonaktifkan Batch",
-      type: "checkbox",
-    },
   ]
 
-  const customActions: ActionItem<HotspotBatch>[] = [
+  const customActions: ActionItem<VoucherBatch>[] = [
     {
       label: "Lihat",
       icon: Eye,
@@ -526,7 +508,7 @@ export default function GenerateVoucherPage() {
       onClick: (batch) => {
         handleEdit(batch);
       },
-      permission: "hotspot.vouchers.view",
+      permission: "hotspot.vouchers.edit",
       variant: "default"
     },
     {
@@ -535,7 +517,7 @@ export default function GenerateVoucherPage() {
       onClick: (batch) => {
         handleDelete(batch)
       },
-      permission: "hotspot.vouchers.view",
+      permission: "hotspot.vouchers.delete",
       variant: "destructive",
       className: "text-red-600"
     }
@@ -547,14 +529,18 @@ export default function GenerateVoucherPage() {
     setDialogOpen(true)
   }
 
-  const handleEdit = (batch: HotspotBatch) => {
+  const handleEdit = (batch: VoucherBatch) => {
     setEditingBatch(batch)
     setDialogOpen(true)
   }
 
-  const handleDelete = async (batch: HotspotBatch) => {
+  const handleDelete = async (batch: VoucherBatch) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus batch "${batch.batch_name}" beserta semua voucher-nya?`)) {
+      return
+    }
+
     try {
-      const response = await fetch(`/api/mikrotik/radius/hotspot/batches/${batch.id}`, {
+      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}`, {
         method: "DELETE",
       })
 
@@ -577,19 +563,20 @@ export default function GenerateVoucherPage() {
       setProgress(0)
 
       const url = editingBatch
-        ? `/api/mikrotik/radius/hotspot/batches/${editingBatch.id}`
-        : "/api/mikrotik/radius/hotspot/batches"
+        ? `/api/mikrotik/hotspot/batches/${editingBatch.id}`
+        : "/api/mikrotik/hotspot/batches"
       const method = editingBatch ? "PUT" : "POST"
 
       // Convert string values to appropriate types
       const submitData = {
         ...data,
+        router_id: parseInt(data.router_id),
         profile_id: data.profile_id ? parseInt(data.profile_id) : null,
-        group_id: data.group_id ? parseInt(data.group_id) : null,
         total_generated: parseInt(data.total_generated) || 0,
         length: parseInt(data.length) || 6,
-        shared_users: parseInt(data.shared_users) || 1,
-        disable: data.disable || false,
+        characters: data.characters || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+        password_mode: data.password_mode || "same_as_username",
+        created_by: 1, // You might want to get this from user context
       }
 
       // Simulate progress for generation
@@ -616,14 +603,14 @@ export default function GenerateVoucherPage() {
       if (response.ok) {
         const result = await response.json()
 
-        if (!editingBatch && result.vouchers) {
+        if (!editingBatch && result.data?.vouchers) {
           // Show generated vouchers
-          setTemplateVouchers(result.vouchers)
+          setTemplateVouchers(result.data.vouchers)
           setShowTemplate(true)
         }
 
         toast.success(
-          editingBatch ? "Batch berhasil diperbarui" : "Batch berhasil dibuat dan voucher telah digenerate"
+          editingBatch ? "Batch berhasil diperbarui" : `Batch berhasil dibuat dengan ${result.data?.vouchers?.length || 0} voucher`
         )
         setDialogOpen(false)
         fetchBatches()
@@ -647,9 +634,10 @@ export default function GenerateVoucherPage() {
     }
   }
 
-  const handleViewTemplate = async (batch: HotspotBatch) => {
+  const handleViewTemplate = async (batch: VoucherBatch) => {
     try {
-      const response = await fetch(`/api/mikrotik/radius/hotspot/batches/${batch.id}/vouchers`)
+      toast.info("Memuat voucher...")
+      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}/vouchers`)
       if (response.ok) {
         const vouchers = await response.json()
         setTemplateVouchers(vouchers.data.slice(0, 40)) // Show first 40 for template
@@ -659,13 +647,14 @@ export default function GenerateVoucherPage() {
       }
     } catch (error) {
       console.error('Error loading vouchers for template:', error)
-      toast.error('Error loading vouchers for template: ' + error.message)
+      toast.error('Error loading vouchers for template: ' + (error as Error).message)
     }
   }
 
-  const handleExportBatch = async (batch: HotspotBatch, format: string) => {
+  const handleExportBatch = async (batch: VoucherBatch, format: string) => {
     try {
-      const response = await fetch(`/api/mikrotik/radius/hotspot/batches/${batch.id}/vouchers`)
+      toast.info("Mengexport voucher...")
+      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}/vouchers`)
       if (response.ok) {
         const vouchers = await response.json()
 
@@ -688,6 +677,7 @@ export default function GenerateVoucherPage() {
           a.download = `vouchers-${batch.batch_name}.csv`
           a.click()
           URL.revokeObjectURL(url)
+          toast.success("Voucher berhasil diexport ke CSV")
         }
       }
     } catch (error) {
@@ -698,27 +688,29 @@ export default function GenerateVoucherPage() {
 
   // Get initial form data for editing
   const getInitialData = () => {
-    if (!editingBatch) return {}
+    if (!editingBatch) return {
+      length: "6",
+      characters: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      password_mode: "same_as_username"
+    }
 
     return {
+      router_id: editingBatch.router_id?.toString() || "",
       batch_name: editingBatch.batch_name,
       profile_id: editingBatch.profile_id?.toString() || "",
-      group_id: editingBatch.group_id?.toString() || "",
       total_generated: editingBatch.total_generated.toString(),
-      length: editingBatch.length.toString(),
+      length: editingBatch.length?.toString() || "6",
       prefix: editingBatch.prefix || "",
-      characters: editingBatch.characters,
-      password_mode: editingBatch.password_mode,
-      shared_users: editingBatch.shared_users.toString(),
+      characters: editingBatch.characters || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      password_mode: editingBatch.password_mode || "same_as_username",
       comment: editingBatch.comment || "",
-      disable: editingBatch.disable,
     }
   }
 
   // Stats
   const totalBatches = batches.length
   const totalGenerated = batches.reduce((sum, batch) => sum + batch.total_generated, 0)
-  const activeBatches = batches.filter(b => !b.disable).length
+  const activeBatches = batches.filter(b => b.is_active).length
   const totalRevenue = batches.reduce((sum, batch) => {
     const profile = profiles.find(p => p.id === batch.profile_id)
     return sum + (profile ? profile.sell_price * batch.total_generated : 0)
@@ -726,14 +718,26 @@ export default function GenerateVoucherPage() {
 
   const VoucherTemplate = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Voucher Template</h2>
+            <h2 className="text-2xl font-bold">Preview Voucher ({templateVouchers.length} voucher)</h2>
             <div className="flex gap-2">
-              <Button onClick={() => window.print()}>
+              <Button onClick={() => handlePrint({
+                id: 0,
+                batch_name: 'Preview',
+                router_id: 0,
+                profile_id: null,
+                generation_config: {},
+                total_generated: templateVouchers.length,
+                comment: null,
+                status: 'active',
+                is_active: true,
+                created_at: new Date().toISOString(),
+                created_by: null
+              })}>
                 <Printer className="h-4 w-4 mr-2" />
-                Print
+                Print All
               </Button>
               <Button variant="outline" onClick={() => setShowTemplate(false)}>
                 Close
@@ -745,17 +749,28 @@ export default function GenerateVoucherPage() {
             {templateVouchers.slice(0, 40).map((voucher, index) => (
               <div key={voucher.id} className="border-2 border-black p-3 print:p-2">
                 <div className="text-center">
-                  <div className="font-bold text-lg mb-2">HOTSPOT VOUCHER</div>
-                  <div className="text-sm mb-2">[{index + 1}]</div>
-                  <div className="text-sm mb-2">Kode Voucher</div>
-                  <div className="font-bold text-lg mb-1">{voucher.username}</div>
-                  <div className="text-sm">
+                  <div className="font-bold text-lg mb-2 print:text-sm">HOTSPOT VOUCHER</div>
+                  <div className="text-sm mb-2 text-gray-600 print:text-xs">[{index + 1}]</div>
+                  <div className="text-sm mb-2 print:text-xs">Username</div>
+                  <div className="font-bold text-lg mb-1 print:text-sm">{voucher.username}</div>
+                  <div className="text-sm mb-2 print:text-xs">Password</div>
+                  <div className="font-bold text-lg mb-1 print:text-sm">{voucher.password}</div>
+                  <div className="text-sm print:text-xs">
                     {voucher.validity} - {voucher.profile}
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {templateVouchers.length > 40 && (
+            <div className="mt-4 p-4 bg-gray-100 rounded text-center">
+              <p className="text-sm text-gray-600">
+                Menampilkan 40 voucher pertama dari {templateVouchers.length} total voucher.
+                Gunakan Print All untuk mencetak semua voucher.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -829,9 +844,9 @@ export default function GenerateVoucherPage() {
         entityName="batch"
         enableBulkSelect={true}
         permissions={{
-          view: "hotspot.vouchers.view",
-          write: "hotspot.vouchers.view",
-          delete: "hotspot.vouchers.view",
+          view: "hotspot.read",
+          write: "hotspot.read",
+          delete: "hotspot.read",
         }}
         onAdd={handleAdd}
         actions={customActions}
@@ -845,11 +860,11 @@ export default function GenerateVoucherPage() {
             ],
           },
           {
-            key: "disable",
+            key: "is_active",
             label: "Status",
             options: [
-              { label: "Active", value: "false" },
-              { label: "Disabled", value: "true" },
+              { label: "Active", value: "true" },
+              { label: "Inactive", value: "false" },
             ],
           },
         ]}

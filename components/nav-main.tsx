@@ -22,6 +22,7 @@ import {
 
 export function NavMain({
   items,
+  groupTitle,
 }: {
   items: {
     title: string
@@ -35,6 +36,7 @@ export function NavMain({
       permission?: string
     }[]
   }[]
+  groupTitle?: string
 }) {
   const pathname = usePathname()
 
@@ -42,7 +44,7 @@ export function NavMain({
   const activeStates = useMemo(() => {
     return items.reduce((acc, item) => {
       const isMainActive = pathname === item.url
-      const hasActiveSubItem = item.items?.some(subItem => pathname === subItem.url)
+      const hasActiveSubItem = Boolean(item.items?.some(subItem => pathname === subItem.url));
       acc[item.title] = {
         isMainActive,
         hasActiveSubItem,
@@ -54,14 +56,15 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      {/* Only show group label if groupTitle is provided */}
+      {groupTitle && <SidebarGroupLabel>{groupTitle}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) => {
           const activeState = activeStates[item.title]
           const hasSubItems = item.items && Array.isArray(item.items) && item.items.length > 0
 
           // Debug: uncomment baris ini untuk melihat data
-          console.log(`Item: ${item.title}, hasSubItems: ${hasSubItems}, items:`, item.items)
+          // console.log(`Item: ${item.title}, hasSubItems: ${hasSubItems}, items:`, item.items)
 
           // Jika item tidak memiliki sub-items, render sebagai link biasa
           if (!hasSubItems) {
@@ -102,7 +105,7 @@ export function NavMain({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {item.items.map((subItem) => (
+                    {item?.items.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton
                           asChild

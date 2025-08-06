@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from "../lib/db/schema/users";
+import * as schema from "@/database/schema/users";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 

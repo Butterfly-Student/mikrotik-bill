@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/components/auth-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { MikrotikProvider } from "@/providers/mikrotik-provider"
 
 
 
@@ -25,7 +26,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {/* <MikrotikProvider> */}
+              {children}
+            {/* </MikrotikProvider> */}
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
 
