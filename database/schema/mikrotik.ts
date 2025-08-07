@@ -175,6 +175,8 @@ export const session_profiles = pgTable(
 			.notNull(),
 		name: varchar("name", { length: 100 }).notNull(),
 		type: sessionTypeEnum("type").notNull(),
+		price: decimal("price", { precision: 15, scale: 2 }).notNull(),
+		sell_price: decimal("sell_price", { precision: 15, scale: 2 }).notNull(),
 
 		// Network configuration stored as JSON for flexibility
 		// PPPoE: bridgeLearning, useIpv6, useMpls, changeTcpMss, useUpnp, addressList, onUp, onDown

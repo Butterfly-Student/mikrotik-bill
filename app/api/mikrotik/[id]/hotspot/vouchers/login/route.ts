@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
 			)
 			.limit(1);
 
+
 		if (!voucher || voucher.length === 0) {
 			return NextResponse.json(
 				{ success: false, message: "Voucher tidak valid atau sudah digunakan" },
@@ -125,6 +126,8 @@ export async function POST(request: NextRequest) {
 		const redirectUrl = `${linkLoginOnly}&username=${encodeURIComponent(
 			username
 		)}&password=${finalPassword}`;
+
+		console.log("Redirect URL:", redirectUrl);
 
 		return NextResponse.json(
 			{

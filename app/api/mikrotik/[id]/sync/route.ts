@@ -1,5 +1,5 @@
+import { createMikrotikClient } from "@/lib/mikrotik/client";
 import { SyncRouterData } from "@/lib/mikrotik/sync";
-import { createMikrotikClient } from "@/lib/utils/mikrotik";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(

@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Plus, Download, FileText, Printer, Zap, Eye, Users, Clock, List, Package, Edit, Trash2, PrinterIcon } from "lucide-react"
 import { toast } from "sonner"
 import { useMikrotikSwitcher } from "@/hooks/use-mikrotik-switcher"
+import { useSession } from "next-auth/react"
 
 interface Profile {
   id: number
@@ -73,19 +74,20 @@ export default function GenerateVoucherPage() {
   const [editingBatch, setEditingBatch] = useState<VoucherBatch | null>(null)
   const [showTemplate, setShowTemplate] = useState(false)
   const [templateVouchers, setTemplateVouchers] = useState<Voucher[]>([])
-  const { routers } = useMikrotikSwitcher()
+  const { routers, activeRouter } = useMikrotikSwitcher()
+  const { data: session } = useSession()
 
   // Fetch data
   useEffect(() => {
     fetchProfiles()
     fetchBatches()
-  }, [])
+  }, [activeRouter])
 
   console.log("GenerateVoucherPage rendered", batches)
 
   const fetchProfiles = async () => {
     try {
-      const response = await fetch("/api/mikrotik/hotspot/profiles")
+      const response = await fetch(`/api/mikrotik/${activeRouter?.id}/hotspot/profiles`)
       if (response.ok) {
         const data = await response.json()
         setProfiles(data.data)
@@ -100,7 +102,7 @@ export default function GenerateVoucherPage() {
   const fetchBatches = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/mikrotik/hotspot/batches")
+      const response = await fetch(`/api/mikrotik/${activeRouter?.id}/hotspot/batches`)
       if (response.ok) {
         const data = await response.json()
         console.log("Fetching batches from API", data)
@@ -310,7 +312,7 @@ export default function GenerateVoucherPage() {
     try {
       toast.info("Memuat voucher untuk print...")
 
-      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}/vouchers`)
+      const response = await fetch(`/api/mikrotik/${activeRouter?.id}/hotspot/batches/${batch.id}/vouchers`)
       if (response.ok) {
         const vouchersData = await response.json()
         const vouchers = vouchersData.data
@@ -405,7 +407,7 @@ export default function GenerateVoucherPage() {
       label: "Router",
       type: "select",
       required: true,
-      options: routers.map(r => ({ value: r.id.toString(), label: `${r.name} (${r.ip_address})` })),
+      options: routers?.map(r => ({ value: r.id.toString(), label: `${r.name} (${r.ip_address})` })),
     },
     {
       name: "batch_name",
@@ -431,7 +433,7 @@ export default function GenerateVoucherPage() {
     },
     {
       name: "length",
-      label: "Panjang Username",
+      label: "Panjang",
       type: "select",
       required: true,
       options: [
@@ -451,9 +453,17 @@ export default function GenerateVoucherPage() {
     {
       name: "characters",
       label: "Karakter yang Digunakan",
-      type: "text",
-      placeholder: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
-      defaultValue: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      type: "select",
+      required: true,
+      options: [
+        { value: "abcdefghijklmnopqrstuvwxyz", label: "Huruf kecil" },
+        { value: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", label: "Huruf besar" },
+        { value: "0123456789", label: "Angka" },
+        { value: "abcdefghijklmnopqrstuvwxyz0123456789", label: "Huruf kecil dan angka" },
+        { value: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", label: "Huruf besar dan angka"},
+        {value: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", label: "Random"},
+      ],
+      defaultValue: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
     },
     {
       name: "password_mode",
@@ -466,12 +476,6 @@ export default function GenerateVoucherPage() {
       ],
       defaultValue: "same_as_username",
     },
-    {
-      name: "comment",
-      label: "Komentar",
-      type: "textarea",
-      placeholder: "Masukkan komentar (opsional)",
-    },
   ]
 
   const customActions: ActionItem<VoucherBatch>[] = [
@@ -481,7 +485,7 @@ export default function GenerateVoucherPage() {
       onClick: (batch) => {
         handleViewTemplate(batch)
       },
-      permission: "hotspot.vouchers.view",
+      permission: "hotspot.read",
       variant: "ghost"
     },
     {
@@ -490,7 +494,7 @@ export default function GenerateVoucherPage() {
       onClick: (batch) => {
         handleExportBatch(batch, "pdf");
       },
-      permission: "hotspot.vouchers.view",
+      permission: "hotspot.read",
       variant: "default"
     },
     {
@@ -499,7 +503,7 @@ export default function GenerateVoucherPage() {
       onClick: (batch) => {
         handlePrint(batch);
       },
-      permission: "hotspot.vouchers.view",
+      permission: "hotspot.read",
       variant: "default"
     },
     {
@@ -540,7 +544,7 @@ export default function GenerateVoucherPage() {
     }
 
     try {
-      const response = await fetch(`/api/mikrotik/hotspot/batches/${batch.id}`, {
+      const response = await fetch(`/api/mikrotik/${activeRouter?.id}/hotspot/batches/${batch.id}`, {
         method: "DELETE",
       })
 
@@ -563,8 +567,8 @@ export default function GenerateVoucherPage() {
       setProgress(0)
 
       const url = editingBatch
-        ? `/api/mikrotik/hotspot/batches/${editingBatch.id}`
-        : "/api/mikrotik/hotspot/batches"
+        ? `/api/mikrotik/${activeRouter?.id}/hotspot/batches/${editingBatch.id}`
+        : `/api/mikrotik/${activeRouter?.id}/hotspot/batches`
       const method = editingBatch ? "PUT" : "POST"
 
       // Convert string values to appropriate types
@@ -576,8 +580,9 @@ export default function GenerateVoucherPage() {
         length: parseInt(data.length) || 6,
         characters: data.characters || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
         password_mode: data.password_mode || "same_as_username",
-        created_by: 1, // You might want to get this from user context
+        created_by: Number(session?.user.id), // You might want to get this from user context
       }
+      console.log("Data to submit:", submitData)
 
       // Simulate progress for generation
       if (!editingBatch) {

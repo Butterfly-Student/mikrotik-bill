@@ -1,8 +1,8 @@
-import { session_profiles } from "./../../database/schema/mikrotik";
+import { session_profiles } from "@/database/schema/mikrotik";
 import { db } from "@/lib/db/index";
 import { eq, and } from "drizzle-orm";
 import { routers } from "@/database/schema/users";
-import { createMikrotikClient } from "../utils/mikrotik";
+import { createMikrotikClient } from "./client";
 
 export interface SimpleSyncResult {
 	success: boolean;

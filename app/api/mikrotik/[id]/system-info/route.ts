@@ -1,5 +1,5 @@
 
-import { createMikrotikClient } from "@/lib/utils/mikrotik";
+import { createMikrotikClient } from "@/lib/mikrotik/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(

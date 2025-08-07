@@ -2,18 +2,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from '@/lib/db/index'
 import { voucher_batches, vouchers } from "@/database/schema/mikrotik";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 interface RouteParams {
 	params: {
 		id: string;
+		batchId: string;
 	};
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-	const { id } = params;
+	const { batchId, id } = params;
 
-	if (!id) {
+	if (!batchId) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -23,9 +24,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		);
 	}
 
-	const batchId = parseInt(id);
+	const identity = parseInt(batchId);
+	const mikrotikId = parseInt(id);
 
-	if (isNaN(batchId)) {
+	if (isNaN(identity)) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -40,10 +42,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		const batch = await db
 			.select()
 			.from(voucher_batches)
-			.where(eq(voucher_batches.id, batchId))
+			.where(
+				and(
+					eq(voucher_batches.id, identity),
+					eq(voucher_batches.router_id, mikrotikId)
+				)
+			)
 			.limit(1);
+			console.log(batch)
 
-		if (!batch[0]) {
+		if (!batch) {
 			return NextResponse.json(
 				{
 					success: false,
@@ -56,7 +64,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		return NextResponse.json({
 			success: true,
 			data: {
-				...batch[0],
+				...batch,
 				...JSON.parse((batch[0].generation_config as string) || "{}"),
 			},
 		});
@@ -74,9 +82,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-	const { id } = params;
+	const { batchId } = params;
 
-	if (!id) {
+	if (!batchId) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -86,9 +94,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 		);
 	}
 
-	const batchId = parseInt(id);
+	const id = parseInt(batchId);
 
-	if (isNaN(batchId)) {
+	if (isNaN(id)) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -110,7 +118,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 				is_active,
 				updated_at: new Date(),
 			})
-			.where(eq(voucher_batches.id, batchId))
+			.where(eq(voucher_batches.id, id))
 			.returning();
 
 		if (!updatedBatch[0]) {
@@ -142,9 +150,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-	const { id } = params;
+	const { batchId } = params;
 
-	if (!id) {
+	if (!batchId) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -154,9 +162,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 		);
 	}
 
-	const batchId = parseInt(id);
+	const id = parseInt(batchId);
 
-	if (isNaN(batchId)) {
+	if (isNaN(id)) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -168,11 +176,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
 	try {
 		// Delete batch and all associated vouchers
-		await db.delete(vouchers).where(eq(vouchers.batch_id, batchId));
+		await db.delete(vouchers).where(eq(vouchers.batch_id, id));
 
 		const deletedBatch = await db
 			.delete(voucher_batches)
-			.where(eq(voucher_batches.id, batchId))
+			.where(eq(voucher_batches.id, id))
 			.returning();
 
 		if (!deletedBatch[0]) {

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <style>
+        @media print {
+            @page {
+                size: {{pageSize}};
+                margin: {{margin}};
+            }
+            body {
+                font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+                background-size: 400% 400%;
+            }
+            .print-header {
+                text-align: center;
+                margin-bottom: 20px;
+                background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+                color: white;
+                padding: 15px;
+                border-radius: 15px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            }
+            .voucher-grid {
+                display: grid;
+                grid-template-columns: repeat({{columns}}, 1fr);
+                gap: 8mm;
+                page-break-inside: avoid;
+            }
+            .voucher-card {
+                padding: 12px;
+                text-align: center;
+                page-break-inside: avoid;
+                border-radius: 15px;
+                color: white;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                position: relative;
+                overflow: hidden;
+            }
+            .voucher-card:nth-child(5n+1) {
+                background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            }
+            .voucher-card:nth-child(5n+2) {
+                background: linear-gradient(135deg, #4ecdc4, #00d2d3);
+            }
+            .voucher-card:nth-child(5n+3) {
+                background: linear-gradient(135deg, #45b7d1, #2d98da);
+            }
+            .voucher-card:nth-child(5n+4) {
+                background: linear-gradient(135deg, #96ceb4, #6c5ce7);
+            }
+            .voucher-card:nth-child(5n+5) {
+                background: linear-gradient(135deg, #feca57, #ff9ff3);
+            }
+            .voucher-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 50%);
+                pointer-events: none;
+            }
+            .voucher-title {
+                font-weight: bold;
+                font-size: 12px;
+                margin-bottom: 5px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .voucher-index {
+                font-size: 10px;
+                margin-bottom: 5px;
+                opacity: 0.9;
+            }
+            .voucher-label {
+                font-size: 10px;
+                margin-bottom: 3px;
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+            .voucher-code {
+                font-weight: bold;
+                font-size: 13px;
+                margin-bottom: 5px;
+                letter-spacing: 2px;
+                font-family: 'Courier New', monospace;
+                background: rgba(255,255,255,0.3);
+                padding: 4px 8px;
+                border-radius: 8px;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            }
+            .voucher-details {
+                font-size: 9px;
+                opacity: 0.95;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        @media screen {
+            body {
+                font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+                padding: 20px;
+                background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+                background-size: 400% 400%;
+                animation: gradientShift 10s ease infinite;
+                min-height: 100vh;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .print-header {
+                text-align: center;
+                margin-bottom: 30px;
+                background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+                color: white;
+                padding: 25px;
+                border-radius: 20px;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+                animation: bounce 2s ease-in-out infinite alternate;
+            }
+            @keyframes bounce {
+                0% { transform: translateY(0px); }
+                100% { transform: translateY(-10px); }
+            }
+            .print-header h1 {
+                font-size: 32px;
+                margin-bottom: 10px;
+                text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            }
+            .voucher-grid {
+                display: grid;
+                grid-template-columns: repeat({{columns}}, 1fr);
+                gap: 20px;
+            }
+            .voucher-card {
+                padding: 20px;
+                text-align: center;
+                border-radius: 20px;
+                color: white;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                position: relative;
+                overflow: hidden;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                animation: cardFloat 3s ease-in-out infinite alternate;
+            }
+            @keyframes cardFloat {
+                0% { transform: translateY(0px) rotate(0deg); }
+                100% { transform: translateY(-5px) rotate(1deg); }
+            }
+            .voucher-card:hover {
+                transform: translateY(-10px) scale(1.05) rotate(2deg);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                animation: none;
+            }
+            .voucher-card:nth-child(5n+1) {
+                background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+                animation-delay: 0s;
+            }
+            .voucher-card:nth-child(5n+2) {
+                background: linear-gradient(135deg, #4ecdc4, #00d2d3);
+                animation-delay: 0.5s;
+            }
+            .voucher-card:nth-child(5n+3) {
+                background: linear-gradient(135deg, #45b7d1, #2d98da);
+                animation-delay: 1s;
+            }
+            .voucher-card:nth-child(5n+4) {
+                background: linear-gradient(135deg, #96ceb4, #6c5ce7);
+                animation-delay: 1.5s;
+            }
+            .voucher-card:nth-child(5n+5) {
+                background: linear-gradient(135deg, #feca57, #ff9ff3);
+                animation-delay: 2s;
+            }
+            .voucher-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 50%);
+                pointer-events: none;
+            }
+            .voucher-title {
+                font-weight: bold;
+                font-size: 16px;
+                margin-bottom: 8px;
+                text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+            }
+            .voucher-index {
+                font-size: 12px;
+                margin-bottom: 8px;
+                opacity: 0.9;
+            }
+            .voucher-label {
+                font-size: 12px;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+            .voucher-code {
+                font-weight: bold;
+                font-size: 18px;
+                margin-bottom: 8px;
+                letter-spacing: 3px;
+                font-family: 'Courier New', monospace;
+                background: rgba(255,255,255,0.3);
+                padding: 8px 12px;
+                border-radius: 12px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            }
+            .voucher-details {
+                font-size: 12px;
+                opacity: 0.95;
+            }
+            .control-buttons {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+            }
+            .control-buttons button {
+                margin-left: 10px;
+                padding: 15px 30px;
+                background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+                color: white;
+                border: none;
+                border-radius: 30px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            }
+            .control-buttons button:hover {
+                transform: translateY(-3px) scale(1.1);
+                box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-buttons no-print">
+        <button onclick="window.print()">🌈 Print</button>
+        <button onclick="window.close()">✖️ Close</button>
+    </div>
+    
+    <div class="print-header">
+        <h1>🎨 COLORFUL VOUCHERS 🎨</h1>
+        <h2>🎪 Batch: {{batchName}}</h2>
+        <p>🎯 Total Vouchers: {{totalVouchers}}</p>
+        <p>🗓️ Generated on: {{generatedDate}}</p>
+    </div>
+    
+    <div class="voucher-grid">
+        {{voucherCards}}
+    </div>
+    
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
+</body>
+</html>

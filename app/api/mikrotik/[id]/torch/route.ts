@@ -1,5 +1,5 @@
 // app/api/mikrotik/[id]/torch/route.ts
-import { createMikrotikClient } from "@/lib/utils/mikrotik";
+import { createMikrotikClient } from "@/lib/mikrotik/client";
 import { NextRequest, NextResponse } from "next/server";
 
 let cachedData: any = null;

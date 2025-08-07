@@ -6,7 +6,7 @@ import {
 	successResponse,
 	ApiError,
 } from "@/lib/utils/api-response";
-import { createDirectClient } from "@/lib/utils/mikrotik";
+import { createDirectClient } from "@/lib/mikrotik/client";
 
 export async function POST(request: NextRequest) {
 	try {

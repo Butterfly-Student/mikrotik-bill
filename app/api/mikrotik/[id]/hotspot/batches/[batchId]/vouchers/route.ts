@@ -2,18 +2,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/index";
 import { vouchers } from "@/database/schema/mikrotik";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 interface RouteParams {
 	params: {
 		id: string;
+		batchId: string;
 	};
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-	const { id } = params;
+	const { batchId, id } = params;
 
-	if (!id) {
+	if (!batchId) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -23,9 +24,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		);
 	}
 
-	const batchId = parseInt(id);
+	const identity = parseInt(batchId);
+	const mikrotikId = parseInt(id);
 
-	if (isNaN(batchId)) {
+	if (isNaN(identity)) {
 		return NextResponse.json(
 			{
 				success: false,
@@ -40,7 +42,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		const batchVouchers = await db
 			.select()
 			.from(vouchers)
-			.where(eq(vouchers.batch_id, batchId));
+			.where(
+							and(
+								eq(vouchers.batch_id, identity),
+								eq(vouchers.router_id, mikrotikId),
+							)
+						)
 
 		// Format vouchers for frontend
 		const formattedVouchers = batchVouchers.map((voucher) => ({
